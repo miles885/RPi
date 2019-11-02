@@ -1,5 +1,4 @@
 # Motion
----
 ### Config
 /etc/motion/motion.conf
 
@@ -13,7 +12,6 @@ http://localhost:8081
 /var/lib/motion
 
 # GPS
----
 ### Service
 stty -F /dev/ttyACM0 9600
 sudo service gpsd stop
