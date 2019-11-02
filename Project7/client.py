@@ -1,4 +1,5 @@
 import json
+import os
 import pprint
 import select
 import signal
@@ -34,8 +35,8 @@ class TCPClient(threading.Thread):
         self._clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._clientSocket.settimeout(socketTimeout)
 
-        #TODO: Replace localhost with RPi IP
-        self._clientSocket.connect(('localhost', 9000))
+        self._clientSocket.connect(('192.168.1.67', 9000))  # RPi IP on home network
+        #self._clientSocket.connect(('192.168.4.1', 9000))  # RPi wireless access point
 
     def run(self):
         """
@@ -78,7 +79,60 @@ class TCPClient(threading.Thread):
         msg = json.loads(msgData[1])
 
         if msgType == MessageType.GPS_MESSAGE:
-            print(pprint.pformat(msg))
+            time = ''
+            lon = 'NaN'
+            lat = 'NaN'
+            alt = 'NaN'
+            speed = 'NaN'
+            climb = 'NaN'
+            epx = 'NaN'
+            epy = 'NaN'
+            epv = 'NaN'
+
+            if 'time' in msg and msg['time'] is not None:
+                time = msg['time']
+            
+            if 'lon' in msg and msg['lon'] is not None:
+                lon = '%4.6f %s (deg)' % (msg['lon'], 'E' if msg['lon'] > 0 else 'W')
+            
+            if 'lat' in msg and msg['lat'] is not None:
+                lat = '%4.6f %s (deg)' % (msg['lat'], 'N' if msg['lat'] > 0 else 'S')
+            
+            if 'alt' in msg and msg['alt'] is not None:
+                alt = '%4.6f (m)' % msg['alt']
+            
+            if 'speed' in msg and msg['speed'] is not None:
+                speed = '%4.6f (MPH)' % msg['speed']
+            
+            if 'climb' in msg and msg['climb'] is not None:
+                climb = '%4.6f (ft/min)' % msg['climb']
+            
+            # Estimated Longitude Error
+            if 'epx' in msg and msg['epx'] is not None:
+                epx = '+/- %4.6f (m)' % msg['epx']
+            
+            # Estimated Latitude Error
+            if 'epy' in msg and msg['epy'] is not None:
+                epy = '+/- %4.6f (m)' % msg['epy']
+            
+            # Estimated Vertical Error
+            if 'epv' in msg and msg['epv'] is not None:
+                epv = '+/- %4.6f (m)' % msg['epv']
+
+            if os.name == 'nt':
+                os.system('cls')
+            else:
+                os.system('clear')
+
+            print('           Time:  %s' % time)
+            print('      Longitude:  %s' % lon)
+            print('       Latitude:  %s' % lat)
+            print('       Altitude:  %s' % alt)
+            print('          Speed:  %s' % speed)
+            print('          Climb:  %s' % climb)
+            print('Longitude Error:  %s' % epx)
+            print(' Latitude Error:  %s' % epy)
+            print(' Altitude Error:  %s' % epv)
 
     def __shutdown(self):
         """
