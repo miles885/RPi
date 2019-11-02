@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+# Python Modules
 import json
 import os
 import select
@@ -8,17 +9,15 @@ import socket
 import threading
 import time
 
+# 3rd Party Modules
+from gps import *
+
+# Project Modules
 from message_handler import MessageType, MessageHandler
 
 # Globals
 keepRunning = True
 shutdownEvent = threading.Event()
-
-#TODO: Remove when reading actual GPS data
-msg = {
-    'test': 'yawp',
-    'test2': 5
-}
 
 class TCPServer(threading.Thread):
     """
@@ -48,6 +47,9 @@ class TCPServer(threading.Thread):
 
         self._serverSocket.bind((serverAddress, serverPort))
         self._serverSocket.listen(backLog)
+
+        # Initialize GPS
+        self._gpsd = gps(mode=WATCH_ENABLE | WATCH_NEWSTYLE)
 
     def run(self):
         """
@@ -95,15 +97,19 @@ class TCPServer(threading.Thread):
                         socketList.remove(sock)
 
                         sock.close()
-            
-            # Broadcast data
-            for sock in socketList:
-                if sock is not self._serverSocket:
-                    msgData = json.dumps(msg)
 
-                    MessageHandler.sendMsg(sock, msgData, MessageType.GPS_MESSAGE)
+            # Retrieve GPS data
+            gpsData = self.__getGPSData()
+
+            # Broadcast GPS data
+            if gpsData:
+                msgData = json.dumps(gpsData)
+
+                for sock in socketList:
+                    if sock is not self._serverSocket:
+                        MessageHandler.sendMsg(sock, msgData, MessageType.GPS_MESSAGE)
             
-            time.sleep(1)
+            time.sleep(0.5)
 
         # Cleanup
         self.__shutdown()
@@ -119,6 +125,33 @@ class TCPServer(threading.Thread):
         """
 
         pass
+
+    def __getGPSData(self):
+        """
+        Retrieves GPS data from a USB sensor
+
+        @param None
+
+        @return GPS data (dictionary)
+        """
+
+        gpsData = {}
+
+        data = self._gpsd.next()
+
+        # Filter on the Time Position Velocity class
+        if data['class'] == 'TPV':
+            gpsData['time'] = data.get('time')
+            gpsData['lat'] = data.get('lat')
+            gpsData['lon'] = data.get('lon')
+            gpsData['alt'] = data.get('alt')
+            gpsData['speed'] = data.get('speed')
+            gpsData['climb'] = data.get('climb')
+            gpsData['epy'] = data.get('epy')
+            gpsData['epx'] = data.get('epx')
+            gpsData['epv'] = data.get('epv')
+
+        return gpsData
 
     def __shutdown(self):
         """
