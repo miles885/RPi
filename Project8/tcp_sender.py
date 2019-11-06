@@ -2,16 +2,20 @@
 import threading
 import time
 
+# Project Modules
+from message_handler import MessageType, MessageHandler
+
 class TCPSender(threading.Thread):
     """
     Periodically sends messages to connected clients
     """
 
-    def __init__(self, msgQueue, socketList, sockerListMutex, sendPeriod=0.1)
+    def __init__(self, msgQueue, serverSocket, socketList, socketListMutex, sendPeriod=0.1):
         """
         Constructor
 
         @param msqQueue        The queue to read messages from
+        @param serverSocket    The server socket
         @param socketList      The socker list used for sending messages
         @param socketListMutex The mutex used to ensure the socket list is correct
         @param sendPeriod      The time between checking the queue for messages to send
@@ -24,6 +28,7 @@ class TCPSender(threading.Thread):
         self.shutdownEvent = threading.Event()
 
         self._msqQueue = msgQueue
+        self._serverSocket = serverSocket
         self._socketList = socketList
         self._socketListMutex = socketListMutex
         self._sendPeriod = sendPeriod
@@ -48,7 +53,8 @@ class TCPSender(threading.Thread):
 
                 try:
                     for sock in self._socketList:
-                        MessageHandler.sendMsg(sock, msgData, msgType)
+                        if sock is not self._serverSocket:
+                            MessageHandler.sendMsg(sock, msgData, msgType)
                 finally:
                     self._socketListMutex.release()
 

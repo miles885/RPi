@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
 # Python Modules
-from queue import Queue
+import Queue
 import select
 import signal
 import socket
+import time
 import threading
 
 # Project Modules
 from gps_reader import GPSReader
-from message_handler import MessageType, MessageHandler
+from message_handler import MessageHandler
 from tcp_sender import TCPSender
 
 # Globals
 keepRunning = True
-shutdownEvent = threading.Event()
 
 class TCPServer(threading.Thread):
     """
@@ -36,6 +36,8 @@ class TCPServer(threading.Thread):
 
         threading.Thread.__init__(self)
 
+        self.shutdownEvent = threading.Event()
+
         self._selectTimeout = selectTimeout
 
         # Create a server socket to listen for connections
@@ -50,10 +52,10 @@ class TCPServer(threading.Thread):
         self._socketList.append(self._serverSocket)
 
         self._socketListMutex = threading.Lock()
-        self._msqQueue = Queue()
+        self._msqQueue = Queue.Queue()
 
         # Create TCP sender
-        self._tcpSender = TCPSender(self._msqQueue, self._socketList, self._socketListLock)
+        self._tcpSender = TCPSender(self._msqQueue, self._serverSocket, self._socketList, self._socketListMutex)
         self._tcpSender.start()
 
         # Create GPS reader
@@ -71,7 +73,7 @@ class TCPServer(threading.Thread):
 
         print('Listening for client connections...')
 
-        while not shutdownEvent.is_set():
+        while not self.shutdownEvent.is_set():
             readyToRead, readyToWrite, inputError = select.select(self._socketList, [], [], self._selectTimeout)
 
             # Iterate over input sockets
@@ -140,6 +142,9 @@ class TCPServer(threading.Thread):
         self._gpsReader.shutdownEvent.set()
         self._tcpSender.shutdownEvent.set()
 
+        self._gpsReader.join()
+        self._tcpSender.join()
+
         self._serverSocket.close()
 
 def service_shutdown(signum, fname):
@@ -168,4 +173,4 @@ if __name__ == "__main__":
     while keepRunning:
         time.sleep(1)
 
-    shutdownEvent.set()
+    tcpServer.shutdownEvent.set()

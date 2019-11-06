@@ -41,16 +41,17 @@ class GPSReader(threading.Thread):
 
         @return None
         """
-        
-        gpsData = self.__getGPSData()
 
-        # Broadcast GPS data
-        if gpsData:
-            msgData = json.dumps(gpsData)
+        while not self.shutdownEvent.is_set():
+            gpsData = self.__getGPSData()
 
-            self._msqQueue.puts((msgData, MessageType.GPS_MESSAGE))
+            # Broadcast GPS data
+            if gpsData:
+                msgData = json.dumps(gpsData)
 
-        time.sleep(self._readPeriod)
+                self._msgQueue.put((msgData, MessageType.GPS_MESSAGE))
+
+            time.sleep(self._readPeriod)
 
     def __getGPSData(self):
         """

@@ -1,3 +1,4 @@
+# Python Modules
 import json
 import os
 import pprint
@@ -7,11 +8,11 @@ import socket
 import threading
 import time
 
+# Project Modules
 from message_handler import MessageType, MessageHandler
 
 # Globals
 keepRunning = True
-shutdownEvent = threading.Event()
 
 class TCPClient(threading.Thread):
     """
@@ -29,6 +30,8 @@ class TCPClient(threading.Thread):
         """
 
         threading.Thread.__init__(self)
+
+        self.shutdownEvent = threading.Event()
 
         self._selectTimeout = selectTimeout
 
@@ -50,7 +53,7 @@ class TCPClient(threading.Thread):
         inputSocketList = []
         inputSocketList.append(self._clientSocket)
 
-        while not shutdownEvent.is_set():
+        while not self.shutdownEvent.is_set():
             readyToRead, readyToWrite, inputError = select.select(inputSocketList, [], [], self._selectTimeout)
 
             for sock in readyToRead:
@@ -171,4 +174,4 @@ if __name__ == "__main__":
     while keepRunning:
         time.sleep(1)
 
-    shutdownEvent.set()
+    tcpClient.shutdownEvent.set()
