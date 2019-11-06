@@ -1,3 +1,6 @@
+# IMPORTANT
+__Project 8, 9, and 10 are intended to be run using Python 3 for the client and server__
+
 # Motion
 ### Config
 /etc/motion/motion.conf
