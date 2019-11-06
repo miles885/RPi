@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
 # Python Modules
-import Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
+
 import select
 import signal
 import socket
@@ -52,7 +56,7 @@ class TCPServer(threading.Thread):
         self._socketList.append(self._serverSocket)
 
         self._socketListMutex = threading.Lock()
-        self._msqQueue = Queue.Queue()
+        self._msqQueue = queue.Queue()
 
         # Create TCP sender
         self._tcpSender = TCPSender(self._msqQueue, self._serverSocket, self._socketList, self._socketListMutex)

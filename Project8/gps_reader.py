@@ -1,9 +1,10 @@
 # Python Modules
 import json
 import threading
+import time
 
 # 3rd Party Modules
-from gps import *
+import gps
 
 # Project Modules
 from message_handler import MessageType
@@ -30,8 +31,9 @@ class GPSReader(threading.Thread):
         self._msgQueue = msgQueue
         self._readPeriod = readPeriod
 
-        # Initialize GPS
-        self._gpsd = gps(mode=WATCH_ENABLE | WATCH_NEWSTYLE)
+        # Initialize GPS (Python 3 version info found at https://learn.adafruit.com/adafruit-ultimate-gps-on-the-raspberry-pi/using-your-gps)
+        self._gpsSession = gps.gps('localhost', '2947')
+        self._gpsSession.stream(gps.WATCH_ENABLE | gps.WATCH_NEWSTYLE)
     
     def run(self):
         """
@@ -64,7 +66,7 @@ class GPSReader(threading.Thread):
 
         gpsData = {}
 
-        data = self._gpsd.next()
+        data = self._gpsSession.next()
 
         # Filter on the Time Position Velocity class
         if data['class'] == 'TPV':
