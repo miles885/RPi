@@ -7,6 +7,7 @@ class MessageType(object):
 	"""
 	
 	GPS_MESSAGE = 1
+	RPY_MESSAGE = 2
 
 class MessageHandler():
 	"""

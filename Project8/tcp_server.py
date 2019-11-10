@@ -15,6 +15,7 @@ import threading
 # Project Modules
 from gps_reader import GPSReader
 from message_handler import MessageHandler
+from rpy_reader import RPYReader
 from tcp_sender import TCPSender
 
 # Globals
@@ -65,6 +66,10 @@ class TCPServer(threading.Thread):
         # Create GPS reader
         self._gpsReader = GPSReader(self._msqQueue)
         self._gpsReader.start()
+
+        # Create RPY reader
+        self._rpyReader = RPYReader(self._msqQueue)
+        self._rpyReader.start()
 
     def run(self):
         """
@@ -143,9 +148,11 @@ class TCPServer(threading.Thread):
         @return None
         """
 
+        self._rpyReader.shutdownEvent.set()
         self._gpsReader.shutdownEvent.set()
         self._tcpSender.shutdownEvent.set()
 
+        self._rpyReader.join()
         self._gpsReader.join()
         self._tcpSender.join()
 

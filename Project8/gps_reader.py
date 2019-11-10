@@ -55,6 +55,9 @@ class GPSReader(threading.Thread):
 
             time.sleep(self._readPeriod)
 
+        # Cleanup
+        self.__shutdown()
+
     def __getGPSData(self):
         """
         Retrieves GPS data from a USB sensor
@@ -81,3 +84,14 @@ class GPSReader(threading.Thread):
             gpsData['epv'] = data.get('epv')
 
         return gpsData
+
+    def __shutdown(self):
+        """
+        Performs shutdown procedures for the thread
+
+        @param None
+
+        @return None
+        """
+
+        pass
