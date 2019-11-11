@@ -75,9 +75,9 @@ class RPYReader(threading.Thread):
         serialDataParts = serialData.split(',')
 
         if len(serialDataParts) == 3:
-            rpyData['roll'] = serialDataParts[0]
-            rpyData['pitch'] = serialDataParts[1]
-            rpyData['yaw'] = serialDataParts[2]
+            rpyData['roll'] = float(serialDataParts[0])
+            rpyData['pitch'] = float(serialDataParts[1])
+            rpyData['yaw'] = float(serialDataParts[2])
         else:
             print(serialData)
 
