@@ -1,4 +1,5 @@
 # Python Modules
+import colorama
 import json
 import os
 import pprint
@@ -32,8 +33,12 @@ class TCPClient(threading.Thread):
         threading.Thread.__init__(self)
 
         self.shutdownEvent = threading.Event()
-
         self._selectTimeout = selectTimeout
+
+        # Initialize colorama and clear screen
+        colorama.init()
+
+        print('\033[2J')
 
         # Connect to server
         self._clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -140,27 +145,29 @@ class TCPClient(threading.Thread):
             self._rpyData['yaw'] = '%4.6f (deg)' % msg['yaw']
 
         # Print the current GPS and RPY data
-        if os.name == 'nt':
-            os.system('cls')
-        else:
-            os.system('clear')
+        print('\033[H')  # Moves cursor to 0,0 on screen
 
-        print('------------------------------ GPS ------------------------------')
-        print('           Time:  %s' % self._gpsData['time'])
-        print('      Longitude:  %s' % self._gpsData['lon'])
-        print('       Latitude:  %s' % self._gpsData['lat'])
-        print('       Altitude:  %s' % self._gpsData['alt'])
-        print('          Speed:  %s' % self._gpsData['speed'])
-        print('          Climb:  %s' % self._gpsData['climb'])
-        print('Longitude Error:  %s' % self._gpsData['epx'])
-        print(' Latitude Error:  %s' % self._gpsData['epy'])
-        print(' Altitude Error:  %s' % self._gpsData['epv'])
-        print('')
-        print('------------------------------ RPY ------------------------------')
-        print('')
-        print('           Roll: %s' % self._rpyData['roll'])
-        print('          Pitch: %s' % self._rpyData['pitch'])
-        print('            Yaw: %s' % self._rpyData['yaw'])
+        outputStrs = []
+        outputStrs.append('------------------------------ GPS ------------------------------')
+        outputStrs.append('           Time:  %s' % self._gpsData['time'])
+        outputStrs.append('      Longitude:  %s' % self._gpsData['lon'])
+        outputStrs.append('       Latitude:  %s' % self._gpsData['lat'])
+        outputStrs.append('       Altitude:  %s' % self._gpsData['alt'])
+        outputStrs.append('          Speed:  %s' % self._gpsData['speed'])
+        outputStrs.append('          Climb:  %s' % self._gpsData['climb'])
+        outputStrs.append('Longitude Error:  %s' % self._gpsData['epx'])
+        outputStrs.append(' Latitude Error:  %s' % self._gpsData['epy'])
+        outputStrs.append(' Altitude Error:  %s' % self._gpsData['epv'])
+        outputStrs.append('')
+        outputStrs.append('------------------------------ RPY ------------------------------')
+        outputStrs.append('')
+        outputStrs.append('           Roll: %s' % self._rpyData['roll'])
+        outputStrs.append('          Pitch: %s' % self._rpyData['pitch'])
+        outputStrs.append('            Yaw: %s' % self._rpyData['yaw'])
+
+        fullOutputStr = '\n'.join(outputStr for outputStr in outputStrs)
+
+        print(fullOutputStr)
 
     def __shutdown(self):
         """
