@@ -1,4 +1,5 @@
 # Python Modules
+import bluetooth
 import colorama
 import json
 import os
@@ -20,10 +21,11 @@ class TCPClient(threading.Thread):
     Client that establishes socket connections with a server
     """
 
-    def __init__(self, selectTimeout=3, socketTimeout=5):
+    def __init__(self, useWifi=True, selectTimeout=3, socketTimeout=5):
         """
         Constructor
 
+        @param useWifi:       Flag denoting whether to use WiFi or Bluetooth
         @param selectTimeout: The select timeout when checking the socket list
         @param socketTimeout: The socket timeout
 
@@ -41,11 +43,17 @@ class TCPClient(threading.Thread):
         print('\033[2J')
 
         # Connect to server
-        self._clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._clientSocket.settimeout(socketTimeout)
+        if useWifi:
+            self._clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._clientSocket.settimeout(socketTimeout)
 
-        self._clientSocket.connect(('192.168.1.67', 9000))  # RPi IP on home network
-        #self._clientSocket.connect(('192.168.4.1', 9000))  # RPi wireless access point
+            self._clientSocket.connect(('192.168.1.67', 9000))  # RPi IP on home network
+            #self._clientSocket.connect(('192.168.4.1', 9000))  # RPi wireless access point
+        else:
+            self._clientSocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+
+
+            self._clientSocket.connect(('DC:A6:32:17:6A:83', 5))
 
         # Set initial output data
         self._gpsData = {
@@ -199,7 +207,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, service_shutdown)
 
     # Start the TCP client
-    tcpClient = TCPClient()
+    tcpClient = TCPClient(useWifi=False)
     tcpClient.start()
 
     # Keep alive
