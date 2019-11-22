@@ -6,6 +6,7 @@ try:
 except ImportError:
     import Queue as queue
 
+import bluetooth
 import select
 import signal
 import socket
@@ -26,20 +27,12 @@ class TCPServer(threading.Thread):
     Server that establishes socket connections between the server and clients
     """
 
-    def __init__(self, 
-                 wifiAddress='0.0.0.0', 
-                 wifiPort=9000, 
-                 btAddress='DC:A6:32:17:6A:83', 
-                 btPort=5, 
-                 useWifi=True
-                 backLog=1, 
-                 selectTimeout=5):
+    def __init__(self, wifiAddress='0.0.0.0', wifiPort=9000, btPort=5, useWifi=True, backLog=1, selectTimeout=5):
         """
         Constructor
 
         @param wifiAddress:   The WiFi address
         @param wifiPort:      The WiFi port
-        @param btAddress:     The MAC address of the Bluetooth adapter
         @param btPort:        The Bluetooth port
         @param useWifi:       Flag denoting whether to use WiFi or Bluetooth
         @param backLog:       Number of unaccepted connections allowed 
@@ -62,10 +55,10 @@ class TCPServer(threading.Thread):
 
             self._serverSocket.bind((wifiAddress, wifiPort))
         else:
-            self._serverSocket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+            self._serverSocket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
             self._serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-            self._serverSocket.bind((btAddress, btPort))
+            self._serverSocket.bind(('', btPort))
 
         self._serverSocket.listen(backLog)
 
