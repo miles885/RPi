@@ -26,12 +26,22 @@ class TCPServer(threading.Thread):
     Server that establishes socket connections between the server and clients
     """
 
-    def __init__(self, serverAddress='0.0.0.0', serverPort=9000, backLog=1, selectTimeout=5):
+    def __init__(self, 
+                 wifiAddress='0.0.0.0', 
+                 wifiPort=9000, 
+                 btAddress='DC:A6:32:17:6A:83', 
+                 btPort=5, 
+                 useWifi=True
+                 backLog=1, 
+                 selectTimeout=5):
         """
         Constructor
 
-        @param serverAddress: The server address
-        @param serverPort:    The server port
+        @param wifiAddress:   The WiFi address
+        @param wifiPort:      The WiFi port
+        @param btAddress:     The MAC address of the Bluetooth adapter
+        @param btPort:        The Bluetooth port
+        @param useWifi:       Flag denoting whether to use WiFi or Bluetooth
         @param backLog:       Number of unaccepted connections allowed 
                               before refusing new connections
         @param selectTimeout: The select timeout when checking the socket list (seconds)
@@ -46,10 +56,17 @@ class TCPServer(threading.Thread):
         self._selectTimeout = selectTimeout
 
         # Create a server socket to listen for connections
-        self._serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if useWifi:
+            self._serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        self._serverSocket.bind((serverAddress, serverPort))
+            self._serverSocket.bind((wifiAddress, wifiPort))
+        else:
+            self._serverSocket = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+            self._serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+            self._serverSocket.bind((btAddress, btPort))
+
         self._serverSocket.listen(backLog)
 
         # Add the server socket to the socket list
@@ -177,7 +194,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, service_shutdown)
 
     # Start the TCP server
-    tcpServer = TCPServer()
+    tcpServer = TCPServer(useWifi=False)
     tcpServer.start()
 
     # Keep alive
