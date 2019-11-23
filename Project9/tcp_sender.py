@@ -1,4 +1,5 @@
 # Python Modules
+import bluetooth
 import threading
 import time
 
@@ -51,12 +52,14 @@ class TCPSender(threading.Thread):
 
                 self._socketListMutex.acquire()
 
-                try:
-                    for sock in self._socketList:
-                        if sock is not self._serverSocket:
+                for sock in self._socketList:
+                    if sock is not self._serverSocket:
+                        try:
                             MessageHandler.sendMsg(sock, msgData, msgType)
-                finally:
-                    self._socketListMutex.release()
+                        except bluetooth.btcommon.BluetoothError:
+                            pass
+
+                self._socketListMutex.release()
 
             time.sleep(self._sendPeriod)
         

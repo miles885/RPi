@@ -104,15 +104,13 @@ class TCPServer(threading.Thread):
                     # Accept the connection and append it to the socket list
                     clientSocket, address = self._serverSocket.accept()
 
-                    #TODO: Add this if there's a timeout blocking issue, or make the sockets non-blocking
-                    #clientSocket.settimeout(0.5)
+                    # Prevent recv calls from blocking indefinitely
+                    #TODO: Could use this as message timeout instead of MessageHandler timeout?
+                    clientSocket.settimeout(1)
 
                     self._socketListMutex.acquire()
-
-                    try:
-                        self._socketList.append(clientSocket)
-                    finally:
-                        self._socketListMutex.release()
+                    self._socketList.append(clientSocket)
+                    self._socketListMutex.release()
                 # Received message from client
                 else:
                     # Read a message off of the socket
@@ -126,11 +124,8 @@ class TCPServer(threading.Thread):
                         print('Client disconnected')
 
                         self._socketListMutex.acquire()
-
-                        try:
-                            self._socketList.remove(sock)
-                        finally:
-                            self._socketListMutex.release()
+                        self._socketList.remove(sock)
+                        self._socketListMutex.release()
 
                         sock.close()
 
