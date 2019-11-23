@@ -29,8 +29,7 @@ class RPYReader(threading.Thread):
         self._msgQueue = msgQueue
         self._readPeriod = readPeriod
 
-        # Initialize serial connection
-        self._serialPort = serial.Serial('/dev/ttyACM0', 115200)
+        self.__establishSerConn()
     
     def run(self):
         """
@@ -68,20 +67,50 @@ class RPYReader(threading.Thread):
         rpyData = {}
 
         # Retrieve serial data
-        serialData = self._serialPort.readline().decode()
-        serialData = serialData.rstrip('\r\n')
+        try:
+            serialData = self._serialPort.readline().decode()
+            serialData = serialData.rstrip('\r\n')
 
-        # Split serial data to find RPY
-        serialDataParts = serialData.split(',')
+            # Split serial data to find RPY
+            serialDataParts = serialData.split(',')
 
-        if len(serialDataParts) == 3:
-            rpyData['roll'] = float(serialDataParts[0])
-            rpyData['pitch'] = float(serialDataParts[1])
-            rpyData['yaw'] = float(serialDataParts[2])
-        else:
-            print(serialData)
+            if len(serialDataParts) == 3:
+                rpyData['roll'] = float(serialDataParts[0])
+                rpyData['pitch'] = float(serialDataParts[1])
+                rpyData['yaw'] = float(serialDataParts[2])
+            else:
+                print(serialData)
+        except serial.serialutil.SerialException:
+            print('Exception while reading RPY data. Attempting to reestabilish serial connection...')
+
+            self._serialPort.close()
+
+            time.sleep(5)
+
+            self.__establishSerConn()
 
         return rpyData
+
+    def __establishSerConn(self):
+        """
+        Etablishes a serial connection on a ttyACM* port
+
+        @param None
+
+        @return None
+        """
+
+        for portNum in range(0, 10):
+            try:
+                port = '/dev/ttyACM' + str(portNum)
+
+                self._serialPort = serial.Serial(port, 115200)
+
+                print('Successfully (re)established serial connection on port: %s' % port)
+
+                break
+            except serial.serialutil.SerialException:
+                pass
 
     def __shutdown(self):
         """
