@@ -207,7 +207,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, service_shutdown)
 
     # Start the TCP client
-    tcpClient = TCPClient(useWifi=False)
+    tcpClient = TCPClient(useWifi=True)
     tcpClient.start()
 
     # Keep alive

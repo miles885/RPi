@@ -1,6 +1,8 @@
 # Python Modules
 import json
 import serial
+import smbus
+import struct
 import threading
 import time
 
@@ -12,11 +14,12 @@ class RPYReader(threading.Thread):
     Class used for reading roll, pitch, yaw data from an Arduino over serial
     """
 
-    def __init__(self, msgQueue, readPeriod=0.1):
+    def __init__(self, msgQueue, useSerial=True, readPeriod=0.1):
         """
         Constructor
 
         @param msgQueue   The queue to place GPS messages on
+        @param useSerial  Flag dictating whether to use Serial or I2C bus
         @param readPeriod The time between RPY reads (seconds)
 
         @return None
@@ -27,9 +30,15 @@ class RPYReader(threading.Thread):
         self.shutdownEvent = threading.Event()
 
         self._msgQueue = msgQueue
+        self._useSerial = useSerial
         self._readPeriod = readPeriod
 
-        self.__establishSerConn()
+        # Initialize the specified bus
+        if useSerial:
+            self.__establishSerConn()
+        else:
+            self._i2cBus = smbus.SMBus(1)
+            self._i2cSlaveAddr = 0x05
     
     def run(self):
         """
@@ -66,28 +75,47 @@ class RPYReader(threading.Thread):
 
         rpyData = {}
 
-        # Retrieve serial data
-        try:
-            serialData = self._serialPort.readline().decode()
-            serialData = serialData.rstrip('\r\n')
+        # Check to see if serial is being used
+        if self._useSerial:
+            # Retrieve serial data
+            try:
+                serialData = self._serialPort.readline().decode()
+                serialData = serialData.rstrip('\r\n')
 
-            # Split serial data to find RPY
-            serialDataParts = serialData.split(',')
+                # Split serial data to find RPY
+                serialDataParts = serialData.split(',')
 
-            if len(serialDataParts) == 3:
-                rpyData['roll'] = float(serialDataParts[0])
-                rpyData['pitch'] = float(serialDataParts[1])
-                rpyData['yaw'] = float(serialDataParts[2])
-            else:
-                print(serialData)
-        except serial.serialutil.SerialException:
-            print('Exception while reading RPY data. Attempting to reestabilish serial connection...')
+                if len(serialDataParts) == 3:
+                    rpyData['roll'] = float(serialDataParts[0])
+                    rpyData['pitch'] = float(serialDataParts[1])
+                    rpyData['yaw'] = float(serialDataParts[2])
+                else:
+                    print(serialData)
+            except serial.serialutil.SerialException:
+                print('Exception while reading RPY data. Attempting to reestabilish serial connection...')
 
-            self._serialPort.close()
+                self._serialPort.close()
 
-            time.sleep(5)
+                time.sleep(5)
 
-            self.__establishSerConn()
+                self.__establishSerConn()
+        # I2C bus is being used
+        else:
+            try:
+                readBytes = self._i2cBus.read_i2c_block_data(self._i2cSlaveAddr, 0, 12)
+
+                rollBytes = bytes(readBytes[0:4])
+                roll = struct.unpack('f', rollBytes)[0]
+                pitchBytes = bytes(readBytes[4:8])
+                pitch = struct.unpack('f', pitchBytes)[0]
+                yawBytes = bytes(readBytes[8:12])
+                yaw = struct.unpack('f', yawBytes)[0]
+
+                rpyData['roll'] = roll
+                rpyData['pitch'] = pitch
+                rpyData['yaw'] = yaw
+            except OSError:
+                print('Caugh OSError while reading from I2C slave')
 
         return rpyData
 
@@ -121,4 +149,5 @@ class RPYReader(threading.Thread):
         @return None
         """
 
-        self._serialPort.close()
+        if self._useSerial:
+            self._serialPort.close()

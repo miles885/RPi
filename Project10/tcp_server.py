@@ -78,7 +78,7 @@ class TCPServer(threading.Thread):
         self._gpsReader.start()
 
         # Create RPY reader
-        self._rpyReader = RPYReader(self._msqQueue)
+        self._rpyReader = RPYReader(self._msqQueue, useSerial=False)
         self._rpyReader.start()
 
     def run(self):
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, service_shutdown)
 
     # Start the TCP server
-    tcpServer = TCPServer(useWifi=False)
+    tcpServer = TCPServer(useWifi=True)
     tcpServer.start()
 
     # Keep alive
