@@ -105,17 +105,14 @@ class RPYReader(threading.Thread):
                 readBytes = self._i2cBus.read_i2c_block_data(self._i2cSlaveAddr, 0, 12)
 
                 rollBytes = bytes(readBytes[0:4])
-                roll = struct.unpack('f', rollBytes)[0]
                 pitchBytes = bytes(readBytes[4:8])
-                pitch = struct.unpack('f', pitchBytes)[0]
                 yawBytes = bytes(readBytes[8:12])
-                yaw = struct.unpack('f', yawBytes)[0]
 
-                rpyData['roll'] = roll
-                rpyData['pitch'] = pitch
-                rpyData['yaw'] = yaw
+                rpyData['roll'] = struct.unpack('f', rollBytes)[0]
+                rpyData['pitch'] = struct.unpack('f', pitchBytes)[0]
+                rpyData['yaw'] = struct.unpack('f', yawBytes)[0]
             except OSError:
-                print('Caugh OSError while reading from I2C slave')
+                print('Caught OSError while reading from I2C slave')
 
         return rpyData
 
