@@ -112,7 +112,7 @@ class RPYReader(threading.Thread):
                 rpyData['pitch'] = struct.unpack('f', pitchBytes)[0]
                 rpyData['yaw'] = struct.unpack('f', yawBytes)[0]
             except OSError:
-                print('Caught OSError while reading from I2C slave')
+                print('Exception while reading RPY data. Make sure the Arduino is connected to the I2C bus.')
 
         return rpyData
 
