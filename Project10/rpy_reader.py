@@ -1,7 +1,7 @@
 # Python Modules
 import json
+import pigpio
 import serial
-import smbus
 import struct
 import threading
 import time
@@ -37,8 +37,8 @@ class RPYReader(threading.Thread):
         if useSerial:
             self.__establishSerConn()
         else:
-            self._i2cBus = smbus.SMBus(1)
-            self._i2cSlaveAddr = 0x05
+            self._gpio = pigpio.pi()
+            self._gpioHandle = self._gpio.i2c_open(1, 0x05)
     
     def run(self):
         """
@@ -96,21 +96,34 @@ class RPYReader(threading.Thread):
 
                 self._serialPort.close()
 
-                time.sleep(5)
+                time.sleep(1)
 
                 self.__establishSerConn()
         # I2C bus is being used
         else:
             try:
-                readBytes = self._i2cBus.read_i2c_block_data(self._i2cSlaveAddr, 0, 12)
+                numBytesRead, readBytes = self._gpio.i2c_read_device(self._gpioHandle, 12)
 
-                rollBytes = bytes(readBytes[0:4])
-                pitchBytes = bytes(readBytes[4:8])
-                yawBytes = bytes(readBytes[8:12])
+                # Check to make sure the read was successful
+                if numBytesRead == 12:
+                    rollBytes = bytes(readBytes[0:4])
+                    pitchBytes = bytes(readBytes[4:8])
+                    yawBytes = bytes(readBytes[8:12])
 
-                rpyData['roll'] = struct.unpack('f', rollBytes)[0]
-                rpyData['pitch'] = struct.unpack('f', pitchBytes)[0]
-                rpyData['yaw'] = struct.unpack('f', yawBytes)[0]
+                    rpyData['roll'] = struct.unpack('f', rollBytes)[0]
+                    rpyData['pitch'] = struct.unpack('f', pitchBytes)[0]
+                    rpyData['yaw'] = struct.unpack('f', yawBytes)[0]
+                # The read was not successful
+                else:
+                    print('Invalid I2C read. Attempting to reestablish I2C connection...')
+
+                    self._gpio.i2c_close(self._gpioHandle)
+                    self._gpio.stop()
+
+                    time.sleep(1)
+
+                    self._gpio = pigpio.pi()
+                    self._gpioHandle = self._gpio.i2c_open(1, 0x05)
             except OSError:
                 print('Exception while reading RPY data. Make sure the Arduino is connected to the I2C bus.')
 
@@ -148,3 +161,6 @@ class RPYReader(threading.Thread):
 
         if self._useSerial:
             self._serialPort.close()
+        else:
+            self._gpio.i2c_close(self._gpioHandle)
+            self._gpio.stop()
