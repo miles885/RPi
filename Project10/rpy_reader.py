@@ -102,6 +102,12 @@ class RPYReader(threading.Thread):
         # I2C bus is being used
         else:
             try:
+                # Command the Arduino to read from the IMU
+                self._gpio.i2c_write_byte(self._gpioHandle, 1)
+
+                time.sleep(.2)
+
+                # Read the RPY data
                 numBytesRead, readBytes = self._gpio.i2c_read_device(self._gpioHandle, 12)
 
                 # Check to make sure the read was successful
@@ -124,8 +130,8 @@ class RPYReader(threading.Thread):
 
                     self._gpio = pigpio.pi()
                     self._gpioHandle = self._gpio.i2c_open(1, 0x05)
-            except OSError:
-                print('Exception while reading RPY data. Make sure the Arduino is connected to the I2C bus.')
+            except (OSError, pigpio.error) as e:
+                print('Exception while reading/writing over I2C. Make sure the Arduino is connected to the I2C bus.')
 
         return rpyData
 
